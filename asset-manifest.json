@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/RoomVisualizerUI/static/css/main.2005be7a.css",
+    "main.js": "/RoomVisualizerUI/static/js/main.b998077e.js",
+    "static/js/453.c160297a.chunk.js": "/RoomVisualizerUI/static/js/453.c160297a.chunk.js",
+    "index.html": "/RoomVisualizerUI/index.html",
+    "main.2005be7a.css.map": "/RoomVisualizerUI/static/css/main.2005be7a.css.map",
+    "main.b998077e.js.map": "/RoomVisualizerUI/static/js/main.b998077e.js.map",
+    "453.c160297a.chunk.js.map": "/RoomVisualizerUI/static/js/453.c160297a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.2005be7a.css",
+    "static/js/main.b998077e.js"
+  ]
+}
