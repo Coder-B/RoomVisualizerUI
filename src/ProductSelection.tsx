@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Product {
   product_id: string;
@@ -14,29 +14,33 @@ interface ProductSelectionProps {
   onProductSelect: (product: Product) => void;
   sessionId: string | null;
   searchKeywords: string;
+  onProductsLoaded: (products: Product[]) => void;
+  storeId: string | null;
 }
 
-const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, selectedSubCategory, onProductSelect, sessionId, searchKeywords }) => {
+const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, selectedSubCategory, onProductSelect, sessionId, searchKeywords, onProductsLoaded, storeId }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     setProducts([]);
     setPage(0);
+    setHasMore(true);
   }, [selectedCategory, selectedSubCategory, searchKeywords]);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !storeId) return;
 
     const fetchProducts = async () => {
       setLoading(true);
       setError(null);
       try {
         const url = searchKeywords ? 
-          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?store=Waltham&company=Lowes&keywords=${searchKeywords}&page=${page}` :
-          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?store=Waltham&company=Lowes&category=${selectedCategory}&page=${page}`;
+          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&keywords=${searchKeywords}&page=${page}` :
+          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&category=${selectedCategory}&page=${page}`;
 
         const response = await fetch(url,
           {
@@ -49,7 +53,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
           throw new Error('Failed to fetch products');
         }
         const data = await response.json();
-        setProducts(prev => page === 0 ? data : [...prev, ...data]);
+        if (data.length === 0) {
+          setHasMore(false);
+        } else {
+          setProducts(prev => page === 0 ? data : [...prev, ...data]);
+          onProductsLoaded(data);
+        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -58,17 +67,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
     };
 
     fetchProducts();
-  }, [selectedCategory, selectedSubCategory, page, sessionId, searchKeywords]);
+  }, [selectedCategory, selectedSubCategory, page, sessionId, searchKeywords, onProductsLoaded, storeId]);
 
-  const handleScroll = () => {
-    if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight || loading) return;
+  const handleScroll = useCallback(() => {
+    if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight || loading || !hasMore) return;
     setPage(prevPage => prevPage + 1);
-  };
+  }, [loading, hasMore]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [loading]);
+  }, [handleScroll]);
 
   return (
     <div className="product-selection">
@@ -80,8 +89,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
           </div>
         ))}
       </div>
-      {loading && <p>Loading...</p>}
-      {error && <p>Error: {error}</p>}
+      {loading && <div className="center-text"><p>Loading...</p></div>}
+      {error && <div className="center-text"><p>Error: {error}</p></div>}
+      {!loading && !hasMore && <div className="center-text"><p>No more products</p></div>}
     </div>
   );
 };

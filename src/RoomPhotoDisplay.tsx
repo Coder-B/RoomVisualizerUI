@@ -8,8 +8,10 @@ interface RoomPhotoDisplayProps {
   selectedCategory: string;
   setUploadedImage: (url: string | null) => void;
   setCustomerImageGSUrl: (url: string | null) => void;
+  setGeneratedImageUrl: (url: string | null) => void;
   isGenerating: boolean;
   generatedImageUrl: string | null;
+  transientMessage: string | null;
 }
 
 const RoomPhotoDisplay: React.FC<RoomPhotoDisplayProps> = ({ 
@@ -19,8 +21,10 @@ const RoomPhotoDisplay: React.FC<RoomPhotoDisplayProps> = ({
   selectedCategory, 
   setUploadedImage, 
   setCustomerImageGSUrl,
+  setGeneratedImageUrl,
   isGenerating,
-  generatedImageUrl
+  generatedImageUrl,
+  transientMessage
 }) => {
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -71,27 +75,41 @@ const RoomPhotoDisplay: React.FC<RoomPhotoDisplayProps> = ({
   const handleClose = () => {
     setUploadedImage(null);
     setCustomerImageGSUrl(null);
+    setGeneratedImageUrl(null);
   };
+
+  const imageToShow = generatedImageUrl || uploadedImage;
 
   return (
     <div className="room-photo-display">
-      {generatedImageUrl ? (
+      {imageToShow ? (
         <div className="image-container">
-          <img src={generatedImageUrl} alt="Generated Room" />
-        </div>
-      ) : isGenerating ? (
-        <div className="upload-prompt">
-          <p>Generating your new room...</p>
-        </div>
-      ) : uploadedImage ? (
-        <div className="image-container">
-          <img src={uploadedImage} alt="Room" />
-          <button className="close-button" onClick={handleClose}>X</button>
+          <img src={imageToShow} alt="Room" />
+          {(isGenerating || transientMessage) && (
+            <div className="loading-overlay">
+              <p>{transientMessage || 'Generating...'}</p>
+            </div>
+          )}
+          {uploadedImage && (
+            <button className="close-button" onClick={handleClose}>X</button>
+          )}
         </div>
       ) : (
         <div className="upload-prompt">
-          <p>Please upload a photo of your room</p>
-          <input type="file" onChange={handleImageUpload} accept="image/*" />
+          {isGenerating ? (
+            <p>Generating your new room...</p>
+          ) : (
+            <>
+              <div className="upload-prompt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <p>Please upload a photo of your room</p>
+                <label htmlFor="file-upload" className="upload-label">
+                  Choose File
+                </label>
+                <input id="file-upload" type="file" onChange={handleImageUpload} accept="image/*" />
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

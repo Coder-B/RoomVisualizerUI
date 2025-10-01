@@ -1,3 +1,7 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   background-color: #f0f0f0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -110,21 +114,47 @@ body {
 .room-photo-display {
   padding: 16px;
   text-align: center;
+  height: 300px; /* Fixed height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-prompt {
   border: 2px dashed #e0e0e0;
   padding: 40px;
   border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.upload-prompt svg {
+  margin-bottom: 16px;
+  color: #888;
+}
+
+.upload-label {
+  background-color: black;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 16px;
 }
 
 .image-container {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .room-photo-display img {
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   border-radius: 8px;
 }
 
@@ -150,7 +180,9 @@ body {
 }
 
 .product-image {
-  height: 120px;
+  width: 100%;
+  height: 160px; /* Adjust as needed */
+  object-fit: cover;
   border-radius: 8px;
   margin-bottom: 8px;
 }
@@ -175,4 +207,27 @@ body {
   line-height: 24px;
   text-align: center;
   cursor: pointer;
+}
+
+.center-text {
+  text-align: center;
+  width: 100%;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+#file-upload {
+  display: none;
 }

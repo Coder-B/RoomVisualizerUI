@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import CategorySelection from './CategorySelection';
 import RoomPhotoDisplay from './RoomPhotoDisplay';
@@ -36,6 +36,21 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [searchKeywords, setSearchKeywords] = useState('');
+  const [products, setProducts] = useState<any[]>([]);
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [transientMessage, setTransientMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const storeIdFromUrl = urlParams.get('storeId');
+    if (storeIdFromUrl) {
+      setStoreId(storeIdFromUrl);
+    }
+  }, []);
+
+  const handleProductsLoaded = useCallback((loadedProducts: any[]) => {
+    setProducts(loadedProducts);
+  }, []);
 
 
   useEffect(() => {
@@ -70,6 +85,10 @@ function App() {
           if (response.ok) {
             const data = await response.json();
             setGeneratedImageUrl(data.publicUrl);
+            setTransientMessage(null); // Clear any previous message
+          } else if (response.status === 404) {
+            setTransientMessage('Image generation is still in progress. Will be ready in seconds...');
+            setTimeout(() => setTransientMessage(null), 2000); // Clear message after 2 seconds
           } else {
             console.error('Failed to generate image');
           }
@@ -85,6 +104,35 @@ function App() {
   }, [customerImageGSUrl, selectedProduct, sessionId]);
 
 
+  useEffect(() => {
+    if (customerImageGSUrl && products && products.length > 0) {
+      const generateImages = async () => {
+        try {
+          await fetch('https://visualizer-backend-358835362025.northamerica-northeast2.run.app/imageGenerationByProductId?storeId=testStore', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'sessionId': sessionId || ''
+            },
+            body: JSON.stringify({
+              customerImageGsUrl: customerImageGSUrl,
+              productIds: products.map(p => p.product_id)
+            })
+          });
+        } catch (error) {
+          console.error('Error calling imageGenerationByProductId:', error);
+        }
+      };
+
+      generateImages();
+    }
+  }, [customerImageGSUrl, products, sessionId]);
+
+  useEffect(() => {
+    setProducts([]);
+  }, [selectedCategory, selectedSubCategory, searchKeywords]);
+
+
   const handleProductSelect = (product: any) => {
     setSelectedProduct(product);
     setGeneratedImageUrl(null); // Reset generated image when new product is selected
@@ -98,7 +146,6 @@ function App() {
     <div className="App">
       <header className="App-header">
         <div className="header-content">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           <div className="title">Room Visualizer</div>
         </div>
         <SearchBox onSearch={handleSearch} />
@@ -107,15 +154,17 @@ function App() {
         <CategorySelection selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedSubCategory={selectedSubCategory} setSelectedSubCategory={setSelectedSubCategory} />
         <RoomPhotoDisplay 
           uploadedImage={uploadedImage} 
-          setUploadedImage={setUploadedImage} 
+          setUploadedImage={setUploadedImage}
           selectedProduct={selectedProduct} 
           sessionId={sessionId} 
           selectedCategory={selectedCategory} 
           setCustomerImageGSUrl={setCustomerImageGSUrl}
           isGenerating={isGenerating}
           generatedImageUrl={generatedImageUrl}
+          setGeneratedImageUrl={setGeneratedImageUrl}
+          transientMessage={transientMessage}
         />
-        <ProductSelection selectedCategory={selectedCategory} selectedSubCategory={selectedSubCategory} onProductSelect={handleProductSelect} sessionId={sessionId} searchKeywords={searchKeywords} />
+        <ProductSelection selectedCategory={selectedCategory} selectedSubCategory={selectedSubCategory} onProductSelect={handleProductSelect} sessionId={sessionId} searchKeywords={searchKeywords} onProductsLoaded={handleProductsLoaded} storeId={storeId} />
       </main>
     </div>
   );
