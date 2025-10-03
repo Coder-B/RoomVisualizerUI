@@ -100,11 +100,10 @@ const RoomPhotoDisplay: React.FC<RoomPhotoDisplayProps> = ({
             <p>Generating your new room...</p>
           ) : (
             <>
-              <div className="upload-prompt">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                <p>Please upload a photo of your room</p>
-                <label htmlFor="file-upload" className="upload-label">
-                  Choose File
+              <div className="upload-prompt-content">
+                <p>Visualize your room with new products.</p>
+                <label htmlFor="file-upload" className="upload-button">
+                  Upload Photo
                 </label>
                 <input id="file-upload" type="file" onChange={handleImageUpload} accept="image/*" />
               </div>

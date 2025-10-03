@@ -146,7 +146,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <div className="header-content">
-          <div className="title">Room Visualizer</div>
+          <div className="title">DesignScape</div>
         </div>
         <SearchBox onSearch={handleSearch} />
       </header>
