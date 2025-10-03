@@ -79,11 +79,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+
+  const handleProductSelect = (product: Product) => {
+    onProductSelect(product);
+    setSelectedProductId(product.product_id);
+  };
+
   return (
     <div className="product-selection">
       <div className="product-grid">
         {products.map((product) => (
-          <div key={product.product_id} className="product-item" onClick={() => onProductSelect(product)}>
+          <div 
+            key={product.product_id} 
+            className={`product-item ${selectedProductId === product.product_id ? 'selected' : ''}`}
+            onClick={() => handleProductSelect(product)}
+          >
             <img src={product.image_public_url} alt={product.description || product.product_id} className="product-image" />
             <p>{product.description || product.product_id}</p>
           </div>

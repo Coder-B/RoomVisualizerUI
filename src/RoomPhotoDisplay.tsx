@@ -41,15 +41,15 @@ const RoomPhotoDisplay: React.FC<RoomPhotoDisplayProps> = ({
 
         const formData = new FormData();
         formData.append('file', compressedFile);
-        formData.append('productCategory', selectedCategory);
-        formData.append('page', '0');
 
         const headers: { [key: string]: string } = {};
         if (sessionId) {
           headers['sessionId'] = sessionId;
         }
 
-        const response = await fetch('https://visualizer-backend-358835362025.northamerica-northeast2.run.app/uploadImage', {
+        const url = `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/uploadImage?productCategory=${selectedCategory}&page=0`;
+
+        const response = await fetch(url, {
           method: 'POST',
           headers: headers,
           body: formData,
