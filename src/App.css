@@ -115,11 +115,14 @@ body {
   border-color: #333;
 }
 
-.room-photo-display {
-  position: -webkit-sticky; /* Safari */
+.sticky-top-container {
   position: sticky;
   top: 0;
   z-index: 1;
+  background-color: white;
+}
+
+.room-photo-display {
   background-color: white;
   padding: 16px;
   text-align: center;
