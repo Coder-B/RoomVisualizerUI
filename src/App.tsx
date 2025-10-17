@@ -145,6 +145,9 @@ function App() {
   }, [searchKeywords]);
 
 
+
+
+
   const handleProductSelect = (product: any) => {
     setSelectedProduct(product);
     setGeneratedImageUrl(null); // Reset generated image when new product is selected
