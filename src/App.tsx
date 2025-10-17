@@ -36,11 +36,43 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [searchKeywords, setSearchKeywords] = useState('');
-  const [products, setProducts] = useState<any[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [generatingProducts, setGeneratingProducts] = useState<string[]>([]);
+  const [completedProducts, setCompletedProducts] = useState<string[]>([]);
+  const handleGenerate = useCallback((selectedProduct: any) => {
+    if (!customerImageGSUrl || !sessionId || !storeId) {
+      console.error('Missing required data for image generation');
+      return;
+    }
+
+    const triggerImageGeneration = async () => {
+      try {
+        const response = await fetch(`https://visualizer-backend-358835362025.northamerica-northeast2.run.app/imageGenerationByProductId?storeId=${storeId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'sessionId': sessionId,
+          },
+          body: JSON.stringify({
+            customerImageGsUrl: customerImageGSUrl,
+            productIds: [selectedProduct.product_id],
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to trigger image generation');
+        }
+        // Handle successful API call if needed
+        console.log('Image generation triggered for product:', selectedProduct.product_id);
+      } catch (error) {
+        console.error('Error triggering image generation:', error);
+      }
+    };
+
+    triggerImageGeneration();
+  }, [customerImageGSUrl, sessionId, storeId]);
   const [transientMessage, setTransientMessage] = useState<string | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
-
   const subCategories: { [key: string]: string[] } = {
     Flooring: ['Wood', 'Carpet', 'Tile', 'Laminate'],
     Walls: ['Paint', 'Wallpaper', 'Panels'],
@@ -53,10 +85,6 @@ function App() {
     if (storeIdFromUrl) {
       setStoreId(storeIdFromUrl);
     }
-  }, []);
-
-  const handleProductsLoaded = useCallback((loadedProducts: any[]) => {
-    setProducts(loadedProducts);
   }, []);
 
 
@@ -112,32 +140,7 @@ function App() {
 
 
   useEffect(() => {
-    if (customerImageGSUrl && products && products.length > 0) {
-      const generateImages = async () => {
-        try {
-          await fetch('https://visualizer-backend-358835362025.northamerica-northeast2.run.app/imageGenerationByProductId?storeId=testStore', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'sessionId': sessionId || ''
-            },
-            body: JSON.stringify({
-              customerImageGsUrl: customerImageGSUrl,
-              productIds: products.map(p => p.product_id)
-            })
-          });
-        } catch (error) {
-          console.error('Error calling imageGenerationByProductId:', error);
-        }
-      };
-
-      generateImages();
-    }
-  }, [customerImageGSUrl, products, sessionId]);
-
-  useEffect(() => {
     if (searchKeywords) {
-      setProducts([]);
     }
   }, [searchKeywords]);
 
@@ -198,7 +201,20 @@ function App() {
           setGeneratedImageUrl={setGeneratedImageUrl}
           transientMessage={transientMessage}
         />
-        <ProductSelection selectedCategory={selectedCategory} selectedSubCategory={selectedSubCategory} onProductSelect={handleProductSelect} sessionId={sessionId} searchKeywords={searchKeywords} onProductsLoaded={handleProductsLoaded} storeId={storeId} />
+                  <ProductSelection
+                    selectedCategory={selectedCategory}
+                    selectedSubCategory={selectedSubCategory}
+                    onProductSelect={handleProductSelect}
+                    sessionId={sessionId}
+                    searchKeywords={searchKeywords}
+                    storeId={storeId}
+                    onGenerate={handleGenerate}
+                    customerImageGSUrl={customerImageGSUrl}
+                    generatingProducts={generatingProducts}
+                    setGeneratingProducts={setGeneratingProducts}
+                    completedProducts={completedProducts}
+                    setCompletedProducts={setCompletedProducts}
+                  />
       </main>
     </div>
   );

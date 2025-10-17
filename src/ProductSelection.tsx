@@ -1,5 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
+const PlusIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 5V19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ConstructionIcon = () => (
+  <img src={process.env.PUBLIC_URL + '/constructor.gif'} alt="Generating..." width="80" height="80" />
+);
+
+const DoneIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 interface Product {
   product_id: string;
   size: string;
@@ -14,16 +31,22 @@ interface ProductSelectionProps {
   onProductSelect: (product: Product) => void;
   sessionId: string | null;
   searchKeywords: string;
-  onProductsLoaded: (products: Product[]) => void;
   storeId: string | null;
+  onGenerate: (selectedProduct: Product) => void;
+  customerImageGSUrl: string | null;
+  generatingProducts: string[];
+  setGeneratingProducts: (value: React.SetStateAction<string[]>) => void;
+  completedProducts: string[];
+  setCompletedProducts: (value: React.SetStateAction<string[]>) => void;
 }
 
-const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, selectedSubCategory, onProductSelect, sessionId, searchKeywords, onProductsLoaded, storeId }) => {
+const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, selectedSubCategory, onProductSelect, sessionId, searchKeywords, storeId, onGenerate, customerImageGSUrl, generatingProducts, setGeneratingProducts, completedProducts, setCompletedProducts }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   useEffect(() => {
     setProducts([]);
@@ -38,7 +61,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
       setLoading(true);
       setError(null);
       try {
-        const url = searchKeywords ? 
+        const url = searchKeywords ?
           `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&keywords=${searchKeywords}&page=${page}` :
           `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&category=${selectedCategory}&page=${page}`;
 
@@ -57,7 +80,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
           setHasMore(false);
         } else {
           setProducts(prev => page === 0 ? data : [...prev, ...data]);
-          onProductsLoaded(data);
         }
       } catch (err: any) {
         setError(err.message);
@@ -67,7 +89,41 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
     };
 
     fetchProducts();
-  }, [selectedCategory, selectedSubCategory, page, sessionId, searchKeywords, onProductsLoaded, storeId]);
+  }, [selectedCategory, selectedSubCategory, page, sessionId, searchKeywords, storeId]);
+
+  useEffect(() => {
+    if (generatingProducts.length === 0) return;
+
+    const interval = setInterval(async () => {
+      for (const productId of generatingProducts) {
+        try {
+          const product = products.find(p => p.product_id === productId);
+          if (!product || !customerImageGSUrl) continue;
+
+          const response = await fetch('https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getGeneratedImageUrl', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'sessionId': sessionId || ''
+            },
+            body: JSON.stringify({
+              customerImageGSUrl: customerImageGSUrl,
+              productImageGSUrl: product.image_gs_url
+            })
+          });
+
+          if (response.ok) {
+            setGeneratingProducts(prev => prev.filter(id => id !== productId));
+            setCompletedProducts(prev => [...prev, productId]);
+          }
+        } catch (error) {
+          console.error(`Error checking status for product ${productId}:`, error);
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [generatingProducts, products, customerImageGSUrl, sessionId, setCompletedProducts, setGeneratingProducts]);
 
   const handleScroll = useCallback(() => {
     if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight || loading || !hasMore) return;
@@ -79,24 +135,49 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const handleProductClick = (product: Product) => {
+    if (generatingProducts.includes(product.product_id) || completedProducts.includes(product.product_id)) {
+      onProductSelect(product);
+      setSelectedProductId(product.product_id);
+      return;
+    }
 
-  const handleProductSelect = (product: Product) => {
     onProductSelect(product);
     setSelectedProductId(product.product_id);
+    setGeneratingProducts(prev => [...prev, product.product_id]);
+    onGenerate(product);
+  };
+
+  const getClassNames = (product: Product) => {
+    let classNames = 'product-item';
+    if (selectedProductId === product.product_id) {
+      classNames += ' selected';
+    }
+    if (generatingProducts.includes(product.product_id)) {
+      classNames += ' generating';
+    }
+    if (completedProducts.includes(product.product_id)) {
+      classNames += ' completed';
+    }
+    return classNames;
   };
 
   return (
     <div className="product-selection">
       <div className="product-grid">
         {products.map((product) => (
-          <div 
-            key={product.product_id} 
-            className={`product-item ${selectedProductId === product.product_id ? 'selected' : ''}`}
-            onClick={() => handleProductSelect(product)}
+          <div
+            key={product.product_id}
+            className={getClassNames(product)}
+            onClick={() => handleProductClick(product)}
           >
-            <img src={product.image_public_url} alt={product.description || product.product_id} className="product-image" />
-            <p>{product.description || product.product_id}</p>
+            <div className="product-image-container">
+              <img src={product.image_public_url} alt={product.description || product.product_id} className="product-image" />
+              <div className="product-icon-overlay">
+                {generatingProducts.includes(product.product_id) ? <ConstructionIcon /> : (completedProducts.includes(product.product_id) ? <DoneIcon /> : <PlusIcon />)}
+              </div>
+            </div>
+            <p className="product-description">{product.description || product.product_id}</p>
           </div>
         ))}
       </div>
