@@ -193,10 +193,12 @@ body {
 }
 
 .product-image {
-  width: 100%;
+  width: 80%;
   height: 20vh;
   object-fit: cover;
   border-radius: 8px;
+  margin: 0 auto;
+  display: block;
 }
 
 .product-image-container {
