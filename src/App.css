@@ -10,7 +10,7 @@ body {
 
 .App {
   max-width: 480px;
-  margin: 0;
+  margin: 0 auto;
   background-color: white;
   min-height: 100vh;
 }
@@ -63,6 +63,14 @@ body {
 .category-selection {
   display: flex;
   align-items: center;
+  overflow-x: auto;
+  max-width: 280px;
+  -ms-overflow-style: none; 
+  scrollbar-width: none; 
+}
+
+.category-selection::-webkit-scrollbar {
+    display: none;
 }
 
 .main-categories {
@@ -80,6 +88,7 @@ body {
   flex-direction: column;
   align-items: center;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .main-categories button svg {
