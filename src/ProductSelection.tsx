@@ -40,7 +40,6 @@ interface ProductSelectionProps {
 
 const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, selectedSubCategory, onProductSelect, sessionId, searchKeywords, storeId, onGenerate, customerImageGSUrl, generatingProducts, setGeneratingProducts, completedProducts, setCompletedProducts }) => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -48,7 +47,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
 
   useEffect(() => {
     setProducts([]);
-    setPage(0);
     setHasMore(true);
   }, [selectedCategory, selectedSubCategory, searchKeywords]);
 
@@ -60,8 +58,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
       setError(null);
       try {
         const url = searchKeywords ?
-          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&keywords=${searchKeywords}&page=${page}` :
-          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&category=${selectedCategory}&page=${page}`;
+          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&keywords=${searchKeywords}` :
+          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&category=${selectedCategory}`;
 
         const response = await fetch(url,
           {
@@ -77,7 +75,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
         if (data.length === 0) {
           setHasMore(false);
         } else {
-          setProducts(prev => page === 0 ? data : [...prev, ...data]);
+          setProducts(data);
         }
       } catch (err: any) {
         setError(err.message);
@@ -87,7 +85,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
     };
 
     fetchProducts();
-  }, [selectedCategory, selectedSubCategory, page, sessionId, searchKeywords, storeId]);
+  }, [selectedCategory, selectedSubCategory, sessionId, searchKeywords, storeId]);
 
   useEffect(() => {
     if (generatingProducts.length === 0) return;
@@ -123,15 +121,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
     return () => clearInterval(interval);
   }, [generatingProducts, products, customerImageGSUrl, sessionId, setCompletedProducts, setGeneratingProducts]);
 
-  const handleScroll = useCallback(() => {
-    if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight || loading || !hasMore) return;
-    setPage(prevPage => prevPage + 1);
-  }, [loading, hasMore]);
 
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
 
   const handleProductClick = (product: Product) => {
     if (generatingProducts.includes(product.product_id) || completedProducts.includes(product.product_id)) {
