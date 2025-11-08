@@ -39,160 +39,187 @@ function App() {
   const [storeId, setStoreId] = useState<string | null>(null);
   const [generatingProducts, setGeneratingProducts] = useState<string[]>([]);
   const [completedProducts, setCompletedProducts] = useState<string[]>([]);
-  const handleGenerate = useCallback((selectedProduct: any) => {
-    if (!customerImageGSUrl || !sessionId || !storeId) {
-      console.error('Missing required data for image generation');
-      return;
-    }
-
-    const triggerImageGeneration = async () => {
-      try {
-        const response = await fetch(`https://visualizer-backend-358835362025.northamerica-northeast2.run.app/imageGenerationByProductId?storeId=${storeId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'sessionId': sessionId,
-          },
-          body: JSON.stringify({
-            customerImageGsUrl: customerImageGSUrl,
-            productIds: [selectedProduct.product_id],
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to trigger image generation');
-        }
-        // Handle successful API call if needed
-        console.log('Image generation triggered for product:', selectedProduct.product_id);
-      } catch (error) {
-        console.error('Error triggering image generation:', error);
-      }
-    };
-
-    triggerImageGeneration();
-  }, [customerImageGSUrl, sessionId, storeId]);
-  const [transientMessage, setTransientMessage] = useState<string | null>(null);
-  const [searchVisible, setSearchVisible] = useState(false);
-  const subCategories: { [key: string]: string[] } = {
-    Flooring: ['Wood', 'Carpet', 'Tile', 'Laminate'],
-    Walls: ['Paint', 'Wallpaper', 'Panels'],
-    Furniture: ['Sofas', 'Chairs', 'Tables', 'Beds'],
-  };
+  const [categories, setCategories] = useState<{ [key: string]: string[] }>({});
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const storeIdFromUrl = urlParams.get('storeId');
-    if (storeIdFromUrl) {
-      setStoreId(storeIdFromUrl);
-    }
-  }, []);
-
-
-  useEffect(() => {
-    let sid = getCookie('sessionId');
-    if (sid) {
-      setSessionId(sid);
-    } else {
-      sid = Date.now().toString(36) + Math.random().toString(36).substr(2);
-      setSessionId(sid);
-      setCookie('sessionId', sid, 7); // Store for 7 days
-    }
-  }, []);
-
-  useEffect(() => {
-    if (customerImageGSUrl && selectedProduct && selectedProduct.image_gs_url) {
-      const getGeneratedImage = async () => {
-        setIsGenerating(true);
-        setGeneratedImageUrl(null);
+    if (storeId && sessionId) {
+      const fetchCategories = async () => {
         try {
-          const response = await fetch('https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getGeneratedImageUrl', {
+          const response = await fetch(`https://visualizer-backend-358835362025.northamerica-northeast2.run.app/categoriesList?storeId=${storeId}`, {
+            headers: {
+              'sessionId': sessionId,
+            },
+          });
+          if (response.ok) {
+            const data: { category: string, sub_category: string }[] = await response.json();
+            const groupedCategories = data.reduce((acc, item) => {
+              if (!acc[item.category]) {
+                acc[item.category] = [];
+              }
+              acc[item.category].push(item.sub_category);
+              return acc;
+            }, {} as { [key: string]: string[] });
+            setCategories(groupedCategories);
+          } else {
+            console.error('Failed to fetch categories');
+          }
+        } catch (error) {
+          console.error('Error fetching categories:', error);
+        }
+      };
+      fetchCategories();
+    }
+  }, [storeId, sessionId]);
+
+
+    const handleGenerate = useCallback((selectedProduct: any) => {
+      if (!customerImageGSUrl || !sessionId || !storeId) {
+        console.error('Missing required data for image generation');
+        return;
+      }
+  
+      const triggerImageGeneration = async () => {
+        try {
+          const response = await fetch(`https://visualizer-backend-358835362025.northamerica-northeast2.run.app/imageGenerationByProductId?storeId=${storeId}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'sessionId': sessionId || ''
+              'sessionId': sessionId,
             },
             body: JSON.stringify({
-              customerImageGSUrl: customerImageGSUrl,
-              productImageGSUrl: selectedProduct.image_gs_url
-            })
+              customerImageGsUrl: customerImageGSUrl,
+              productIds: [selectedProduct.product_id],
+            }),
           });
-
-          if (response.ok) {
-            const data = await response.json();
-            setGeneratedImageUrl(data.publicUrl);
-            setTransientMessage(null); // Clear any previous message
-          } else if (response.status === 404) {
-            setTransientMessage('Image generation is still in progress. Will be ready in seconds...');
-            setTimeout(() => setTransientMessage(null), 2000); // Clear message after 2 seconds
-          } else {
-            console.error('Failed to generate image');
+  
+          if (!response.ok) {
+            throw new Error('Failed to trigger image generation');
           }
+          // Handle successful API call if needed
+          console.log('Image generation triggered for product:', selectedProduct.product_id);
         } catch (error) {
-          console.error('Error generating image:', error);
-        } finally {
-          setIsGenerating(false);
+          console.error('Error triggering image generation:', error);
         }
       };
-
-      getGeneratedImage();
-    }
-  }, [customerImageGSUrl, selectedProduct, sessionId]);
-
-
-  useEffect(() => {
-    if (searchKeywords) {
-    }
-  }, [searchKeywords]);
-
-
-
-
-
-  const handleProductSelect = (product: any) => {
-    setSelectedProduct(product);
-    setGeneratedImageUrl(null); // Reset generated image when new product is selected
-  };
-
-  const handleSearch = (keywords: string) => {
-    setSearchKeywords(keywords);
-    if (keywords) {
-      setSelectedCategory("");
-      setSelectedSubCategory("");
-      setSearchVisible(true);
-    }
-  };
-
-  const handleCategorySelect = () => {
-    setSearchVisible(false);
-  };
-
-  return (
-    <div className="App">
-      <div className="sticky-top-container">
-        <header className="App-header">
-          <div className="header-content">
-            <div className="title">DesignScape</div>
-            <div className="header-actions">
-              <button className="search-icon" onClick={() => setSearchVisible(!searchVisible)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              </button>
-              <CategorySelection selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedSubCategory={selectedSubCategory} setSelectedSubCategory={setSelectedSubCategory} onCategorySelect={handleCategorySelect} />
+  
+      triggerImageGeneration();
+    }, [customerImageGSUrl, sessionId, storeId]);
+    const [transientMessage, setTransientMessage] = useState<string | null>(null);
+    const [searchVisible, setSearchVisible] = useState(false);
+  
+    useEffect(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const storeIdFromUrl = urlParams.get('storeId');
+      if (storeIdFromUrl) {
+        setStoreId(storeIdFromUrl);
+      }
+    }, []);
+  
+  
+    useEffect(() => {
+      let sid = getCookie('sessionId');
+      if (sid) {
+        setSessionId(sid);
+      } else {
+        sid = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        setSessionId(sid);
+        setCookie('sessionId', sid, 7); // Store for 7 days
+      }
+    }, []);
+  
+    useEffect(() => {
+      if (customerImageGSUrl && selectedProduct && selectedProduct.image_gs_url) {
+        const getGeneratedImage = async () => {
+          setIsGenerating(true);
+          setGeneratedImageUrl(null);
+          try {
+            const response = await fetch('https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getGeneratedImageUrl', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'sessionId': sessionId || ''
+              },
+              body: JSON.stringify({
+                customerImageGSUrl: customerImageGSUrl,
+                productImageGSUrl: selectedProduct.image_gs_url
+              })
+            });
+  
+            if (response.ok) {
+              const data = await response.json();
+              setGeneratedImageUrl(data.publicUrl);
+              setTransientMessage(null); // Clear any previous message
+            } else if (response.status === 404) {
+              setTransientMessage('Image generation is still in progress. Will be ready in seconds...');
+              setTimeout(() => setTransientMessage(null), 2000); // Clear message after 2 seconds
+            } else {
+              console.error('Failed to generate image');
+            }
+          } catch (error) {
+            console.error('Error generating image:', error);
+          } finally {
+            setIsGenerating(false);
+          }
+        };
+  
+        getGeneratedImage();
+      }
+    }, [customerImageGSUrl, selectedProduct, sessionId]);
+  
+  
+    useEffect(() => {
+      if (searchKeywords) {
+      }
+    }, [searchKeywords]);
+  
+  
+  
+  
+  
+    const handleProductSelect = (product: any) => {
+      setSelectedProduct(product);
+      setGeneratedImageUrl(null); // Reset generated image when new product is selected
+    };
+  
+    const handleSearch = (keywords: string) => {
+      setSearchKeywords(keywords);
+      if (keywords) {
+        setSelectedCategory("");
+        setSelectedSubCategory("");
+        setSearchVisible(true);
+      }
+    };
+  
+    const handleCategorySelect = () => {
+      setSearchVisible(false);
+    };
+  
+    return (
+      <div className="App">
+        <div className="sticky-top-container">
+          <header className="App-header">
+            <div className="header-content">
+              <div className="title">DesignScape</div>
+              <div className="header-actions">
+                <button className="search-icon" onClick={() => setSearchVisible(!searchVisible)}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <CategorySelection selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedSubCategory={selectedSubCategory} setSelectedSubCategory={setSelectedSubCategory} onCategorySelect={handleCategorySelect} mainCategories={Object.keys(categories)} />
+              </div>
             </div>
-          </div>
-          {searchVisible && <SearchBox onSearch={handleSearch} />}
-        </header>
-        {selectedCategory && !searchVisible && <div className="sub-category-bar">
-          {subCategories[selectedCategory].map(subCategory => (
-            <button 
-              key={subCategory} 
-              className={selectedSubCategory === subCategory ? 'active' : ''} 
-              onClick={() => setSelectedSubCategory(subCategory)}
-            >
-              {subCategory}
-            </button>
-          ))}
-        </div>}
-        <RoomPhotoDisplay 
+            {searchVisible && <SearchBox onSearch={handleSearch} />}
+          </header>
+          {selectedCategory && !searchVisible && categories[selectedCategory] && <div className="sub-category-bar">
+            {categories[selectedCategory].map(subCategory => (
+              <button
+                key={subCategory}
+                className={selectedSubCategory === subCategory ? 'active' : ''}
+                onClick={() => setSelectedSubCategory(subCategory)}
+              >
+                {subCategory}
+              </button>
+            ))}
+          </div>}        <RoomPhotoDisplay 
           uploadedImage={uploadedImage} 
           setUploadedImage={setUploadedImage}
           selectedProduct={selectedProduct} 
