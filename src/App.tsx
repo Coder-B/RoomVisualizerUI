@@ -192,6 +192,7 @@ function App() {
   
     const handleCategorySelect = () => {
       setSearchVisible(false);
+      setSelectedSubCategory(''); // Reset subcategory when main category is selected
     };
   
     return (

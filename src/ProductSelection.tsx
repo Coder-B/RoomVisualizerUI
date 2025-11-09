@@ -57,9 +57,15 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ selectedCategory, s
       setLoading(true);
       setError(null);
       try {
-        const url = searchKeywords ?
-          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&keywords=${searchKeywords}` :
-          `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}&category=${selectedCategory}`;
+        let url = `https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getProductList?storeId=${storeId}`;
+        if (searchKeywords) {
+          url += `&keywords=${searchKeywords}`;
+        } else {
+          url += `&category=${selectedCategory}`;
+          if (selectedSubCategory) {
+            url += `&subcategory=${selectedSubCategory}`;
+          }
+        }
 
         const response = await fetch(url,
           {
