@@ -131,7 +131,6 @@ function App() {
       if (customerImageGSUrl && selectedProduct && selectedProduct.image_gs_url) {
         const getGeneratedImage = async () => {
           setIsGenerating(true);
-          setGeneratedImageUrl(null);
           try {
             const response = await fetch('https://visualizer-backend-358835362025.northamerica-northeast2.run.app/getGeneratedImageUrl', {
               method: 'POST',
@@ -194,6 +193,12 @@ function App() {
       setSearchVisible(false);
       setSelectedSubCategory(''); // Reset subcategory when main category is selected
     };
+
+    const handleImageUpload = (url: string | null) => {
+      setUploadedImage(url);
+      setCompletedProducts([]);
+      setGeneratedImageUrl(null);
+    };
   
     return (
       <div className="App">
@@ -222,14 +227,13 @@ function App() {
             ))}
           </div>}        <RoomPhotoDisplay 
           uploadedImage={uploadedImage} 
-          setUploadedImage={setUploadedImage}
+          onImageUpload={handleImageUpload}
           selectedProduct={selectedProduct} 
           sessionId={sessionId} 
           selectedCategory={selectedCategory} 
           setCustomerImageGSUrl={setCustomerImageGSUrl}
           isGenerating={isGenerating}
           generatedImageUrl={generatedImageUrl}
-          setGeneratedImageUrl={setGeneratedImageUrl}
           transientMessage={transientMessage}
         />
       </div>

@@ -6,9 +6,8 @@ interface RoomPhotoDisplayProps {
   selectedProduct: any | null;
   sessionId: string | null;
   selectedCategory: string;
-  setUploadedImage: (url: string | null) => void;
+  onImageUpload: (url: string | null) => void;
   setCustomerImageGSUrl: (url: string | null) => void;
-  setGeneratedImageUrl: (url: string | null) => void;
   isGenerating: boolean;
   generatedImageUrl: string | null;
   transientMessage: string | null;
@@ -19,9 +18,8 @@ const RoomPhotoDisplay: React.FC<RoomPhotoDisplayProps> = ({
   selectedProduct, 
   sessionId, 
   selectedCategory, 
-  setUploadedImage, 
+  onImageUpload, 
   setCustomerImageGSUrl,
-  setGeneratedImageUrl,
   isGenerating,
   generatedImageUrl,
   transientMessage
@@ -57,25 +55,24 @@ const RoomPhotoDisplay: React.FC<RoomPhotoDisplayProps> = ({
 
         if (response.ok) {
           const data = await response.json();
-          setUploadedImage(data.publicUrl);
+          onImageUpload(data.publicUrl);
           setCustomerImageGSUrl(data.gsUrl);
         } else {
           console.error('Image upload failed');
-          setUploadedImage(null);
+          onImageUpload(null);
           setCustomerImageGSUrl(null);
         }
       } catch (error) { 
         console.error('Error uploading image:', error);
-        setUploadedImage(null);
+        onImageUpload(null);
         setCustomerImageGSUrl(null);
       }
     }
   };
 
   const handleClose = () => {
-    setUploadedImage(null);
+    onImageUpload(null);
     setCustomerImageGSUrl(null);
-    setGeneratedImageUrl(null);
   };
 
   const imageToShow = generatedImageUrl || uploadedImage;
